@@ -34,10 +34,15 @@ public class VideoServiceImpl implements VideoService {
             throw new PlatformNotSupported();
         }
         currentVideoInformation.setHostingService(requestedPlatform);
-        currentVideoInformation.setTitle(getVideoTitle(extractVideoId(url), apiKey));
+        Video currentVideo = getVideoObject(extractVideoId(url), apiKey);
+        currentVideoInformation.setTitle(getVideoTitle(currentVideo));
+        currentVideoInformation.setThumbnail(getVideoThumbnail(currentVideo));
+        currentVideoInformation.setDuration(getVideoDuration(currentVideo));
+        currentVideoInformation.setAuthor(getVideoAuthor(currentVideo));
+        return currentVideoInformation;
     }
 
-    public static String getVideoTitle(String videoId, String apiKey) throws IOException {
+    private Video getVideoObject(String videoId, String apiKey) throws IOException {
         YouTube youtube = new YouTube.Builder(new NetHttpTransport(), new JacksonFactory() , request -> {})
                 .setApplicationName("AtlasVideoCoders")
                 .build();
@@ -47,10 +52,24 @@ public class VideoServiceImpl implements VideoService {
         videoRequest.setKey(apiKey);
 
         VideoListResponse response = videoRequest.execute();
-        Video video = response.getItems().get(0);
+        return response.getItems().get(0);
+    }
+
+    private String getVideoTitle(Video video) throws IOException {
         return video.getSnippet().getTitle();
     }
 
+    private String getVideoThumbnail(Video video) {
+        return video.getSnippet().getThumbnails().getHigh().getUrl();
+    }
+
+    private String getVideoDuration(Video video) {
+        return video.getContentDetails().getDuration();
+    }
+
+    private String getVideoAuthor(Video video) {
+        return video.getSnippet().getChannelTitle();
+    }
     private String getVideoPlatform(String url) {
         String youtubePattern = "(?:https?://)?(?:www\\.)?(?:youtube\\.com|youtu\\.be)";
         String dailymotionPattern = "(?:https?://)?(?:www\\.)?dailymotion\\.com";
